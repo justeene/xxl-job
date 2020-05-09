@@ -5,11 +5,14 @@ import com.xxl.job.core.util.JacksonUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.ApplicationHome;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.EncodedResource;
 import org.springframework.core.io.support.PropertiesLoaderUtils;
 
+import java.io.File;
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.HashMap;
@@ -33,10 +36,21 @@ public class I18nUtil {
             // build i18n prop
             String i18n = XxlJobAdminConfig.getAdminConfig().getI18n();
             i18n = StringUtils.isNotBlank(i18n)?("_"+i18n):i18n;
-            String i18nFile = MessageFormat.format("i18n/message{0}.properties", i18n);
+            String i18nFileName = MessageFormat.format("i18n/message{0}.properties", i18n);
 
             // load prop
-            Resource resource = new ClassPathResource(i18nFile);
+            //获取jar的运行目录，找外部的i18n,如果找不到，就用内部的
+            ApplicationHome applicationHome = new ApplicationHome(I18nUtil.class);
+            Resource resource;
+            File i18nFile=new File(applicationHome.getDir().getAbsolutePath()+ File.separator+"config"+ File.separator+i18nFileName);
+            logger.info("读取i18n地址为:{}",i18nFile.getAbsolutePath());
+            if(!i18nFile.exists()) {
+                resource= new ClassPathResource(i18nFileName);
+                logger.info("文件不存在，读取jar内部i18n配置");
+            }else{
+                resource= new FileSystemResource(i18nFile);
+                logger.info("读取外部i18n文件成功");
+            }
             EncodedResource encodedResource = new EncodedResource(resource,"UTF-8");
             prop = PropertiesLoaderUtils.loadProperties(encodedResource);
         } catch (IOException e) {
